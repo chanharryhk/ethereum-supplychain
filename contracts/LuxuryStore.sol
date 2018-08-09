@@ -1,9 +1,9 @@
 pragma solidity ^0.4.24;
 
-import "./library/SafeMath.sol";
-import "./library/ERC721Basic.sol";
+import "./SafeMath.sol";
+import "./ERC721Basic.sol";
 
-contract LuxuryStore is ERC721Basic{
+contract LuxuryStore {
 
     using SafeMath for uint256;
 
@@ -51,18 +51,8 @@ contract LuxuryStore is ERC721Basic{
     /**
     @dev Initialize the LuxuryStore contract by setting the number of items in existence as 0
     */
-    constructor() public {
+    constructor() public payable {
         itemID = 0;
-    }
-
-    /**
-    @dev Quasi contstructor is called after contract is deployed
-    @param _distributeToken Address of LuxuryStore contract
-    */
-
-    function init(address _luxuryStore) public {
-        require(address(luxuryStore) == 0);
-        luxuryStore = LuxuryStore(_luxuryStore);
     }
 
   // =====================================================================
@@ -79,24 +69,33 @@ contract LuxuryStore is ERC721Basic{
         itemID += 1;
     }
 
-    function sellItem(uint256 _itemNumber, uint256 _itemPrice) public onlyItemOwner(_itemNumber) {
-        require(items[itemID].forSale == true);
-        /* items[_itemNumber].forSale = true; */
+    function sellItem(uint256 _itemNumber, uint256 _itemPrice) public onlyItemOwner(_itemNumber){
+        // require(items[_itemNumber].forSale == true);
+        items[_itemNumber].forSale = true;
         items[_itemNumber].price[items[_itemNumber].numOfTransfers] = _itemPrice;
     }
 
-    function buyItem(uint256 _itemNumber) public payable onlyItemOwner(_itemNumber) itemOnSale(_itemNumber){
-        require(msg.value == items[_itemNumber].price[items[_itemNumber].numOfTransfers]); // Ether sent in must match item price listing
+    function buyItem(uint256 _itemNumber) public payable itemOnSale(_itemNumber){
+        // require(msg.value >= items[_itemNumber].price[items[_itemNumber].numOfTransfers]); // Ether sent in must match item price listing
         items[_itemNumber].owners[items[_itemNumber].numOfTransfers - 1].transfer(msg.value); // Sending Ether to previous owner
         items[_itemNumber].forSale = false; // Not for sale anymore
         items[_itemNumber].numOfTransfers += 1; // Increasing number of transfers on the item
         items[_itemNumber].owners[items[_itemNumber].numOfTransfers] = msg.sender; // Moving ownership to item purchaser
     }
 
-    // =====================================================================
-    // FALLBACK
-    // =====================================================================
+    function itemCount() public view returns(uint256) {
+        return itemID;
+    }
 
-    function() public payable {}
+    function itemPrice(uint256 _itemNumber) public view returns(uint256) {
+        return items[_itemNumber].price[items[_itemNumber].numOfTransfers];
+    }
 
+    function itemAvailability(uint256 _itemNumber) public view returns(bool){
+        return items[_itemNumber].forSale;
+    }
+
+    function ownerOfItem(uint256 _itemNumber, uint256 _transferNum) public view returns(address){
+        return items[_itemNumber].owners[_transferNum];
+    }
 }
